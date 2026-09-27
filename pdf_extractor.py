@@ -12,62 +12,113 @@ def solicitar_dato_emergente(mensaje):
     respuesta = simpledialog.askstring("Dato no encontrado",mensaje)
     return respuesta if respuesta else "0" # Devuelve 0 si se cancela la ventana.
 
-def extraer_informacion_pdfs(ruta_pdf1, ruta_pdf2):
-    '''Extrae la información de los archivos PDF '''
-    precio_x_libra = 0.0
-    fecha_factura = ""
-    
-    # DICCIONARIO PARA FORMATEAR LA FECHA
-    meses_esp = {1: "ENERO", 2: "FEBRERO", 3: "MARZO", 4: "ABRIL", 5: "MAYO", 6: "JUNIO", 7: "JULIO", 8: "AGOSTO", 9: "SEPTIEMBRE", 10: "OCTUBRE", 11: "NOVIEMBRE", 12: "DICIEMBRE"}
-    
-    # ==========================================
-    #       LEER PDF 1 (Factura / General)
-    # ==========================================
-    with pdfplumber.open(ruta_pdf1) as pdf1:
-        for page in pdf1.pages:
-            tablas_factura = page.extract_tables()
-            for tabla in tablas_factura:
-                if not tabla or len(tabla) < 2: continue
-                df_fac = pd.DataFrame(tabla)
-                
-                for r_idx in range(len(df_fac)):
-                    for c_idx in range(len(df_fac.columns)):
-                        celda = str(df_fac.iloc[r_idx, c_idx]).lower()
-                        
-                        # LOCALIZACIÓN Y FORMATEO DE FECHA (DD-MMM-AAAA)
-                        if 'date' in celda and ('shipped' in celda or 'envoi' in celda):
-                            if r_idx + 1 < len(df_fac):
-                                valor_abajo = str(df_fac.iloc[r_idx + 1, c_idx]).strip()
-                                if re.search(r'\d', valor_abajo) and not fecha_factura:
-                                    fecha_cruda = valor_abajo.upper()
-                                    try:
-                                        # CON PANDAS SE REALIZA EL CAMBIO DE FECHA
-                                        dt = pd.to_datetime(fecha_cruda)
-                                        # NUEVO FORMATO
-                                        fecha_factura = f"{dt.day:02d}-{meses_esp[dt.month]}-{dt.year}"
-                                    except:
-                                        fecha_factura = fecha_cruda # Por si acaso falla, pasamos la original
-                                    
-                                    
-                        # LOCALIZADOR DE PRECIO
-                        if 'unit price' in celda or 'unitaire' in celda:
-                            for i in range(r_idx + 1, len(df_fac)):
-                                valor_abajo = str(df_fac.iloc[i, c_idx]).strip()
-                                extraccion = re.search(r'([0-9]+\.[0-9]{2,5})', valor_abajo)
-                                if extraccion and precio_x_libra == 0.0:
-                                    precio_x_libra = float(extraccion.group(1))
-                                    break 
-                                    
-    if precio_x_libra == 0.0:
-        respuesta= solicitar_dato_emergente("Ingresa el precio por libra en dólares")
-        precio_x_libra = float(respuesta)
-    if not fecha_factura:
-        fecha_cruda = solicitar_dato_emergente("Ingresa la fecha manualmente.\nEjemplo: 8/7/2026").upper()
+def extract_invoice_data(invoice_path):
+    """Extract the price per pound and shipping date from invoice PDF."""
+    price_per_pound = 0.0
+    invoice_date = ""
+
+    spanish_months = {
+        1: "ENERO",
+        2: "FEBRERO",
+        3: "MARZO",
+        4: "ABRIL",
+        5: "MAYO",
+        6: "JUNIO",
+        7: "JULIO",
+        8: "AGOSTO",
+        9: "SEPTIEMBRE",
+        10: "OCTUBRE",
+        11: "NOVIEMBRE",
+        12: "DICIEMBRE"
+    }
+    with pdfplumber.open(invoice_path) as pdf:
+        for page in pdf.pages:
+            invoice_tables = page.extract_tables()
+
+            for table in invoice_tables:
+                if not table or len(table) < 2:
+                    continue
+
+                invoice_df = pd.DataFrame(table)
+
+                for row_idx in range(len(invoice_df)):
+                    for col_idx in range(len(invoice_df.columns)):
+                        cell = str(
+                        invoice_df.iloc[row_idx, col_idx]).lower()
+
+                        # FIND AND FORMAT SHIPPING DATE
+                        if 'date' in cell and (
+                            'shipped' in cell or 'envoi' in cell):
+                                if row_idx + 1 < len(invoice_df):
+                                    value_below = str(
+                                        invoice_df.iloc[
+                                            row_idx + 1,
+                                            col_idx
+                                        ]
+                                    ).strip()
+
+                                    if (
+                                        re.search(r'\d',value_below)
+                                        and not invoice_date
+                                    ):
+                                        raw_date = value_below.upper()
+                                        try:
+                                            dt = pd.to_datetime(raw_date)
+                                            invoice_date = (
+                                                f"{dt.day:02d}-"
+                                                f"{spanish_months[dt.month]}-"
+                                                f"{dt.year}"
+                                            )
+                                        except (ValueError, TypeError):
+                                            invoice_date = raw_date
+
+                        # FIND UNIT PRICE
+                        if 'unit price' in cell or 'unitaire' in cell:
+                            for i in range(
+                                row_idx + 1,
+                                len(invoice_df)
+                            ):
+                                value_below = str(
+                                    invoice_df.iloc[i, col_idx]
+                                ).strip()
+
+                                match = re.search(
+                                    r'([0-9]+\.[0-9]{2,5})',
+                                    value_below
+                                )
+
+                                if match and price_per_pound == 0.0:
+                                    price_per_pound = float(
+                                        match.group(1)
+                                    )
+                                    break
+
+    if price_per_pound == 0.0:
+        response = solicitar_dato_emergente(
+            "Enter the price per pound in USD"
+        )
+        price_per_pound = float(response)
+
+    if not invoice_date:
+        raw_date = solicitar_dato_emergente(
+            "Enter the date manually.\nExample: 8/7/2026"
+        ).upper()
+
         try:
-            dt = pd.to_datetime(fecha_cruda)
-            fecha_factura = f"{dt.day:02d}-{meses_esp[dt.month]}-{dt.year}"
-        except:
-            fecha_factura = fecha_cruda
+            dt = pd.to_datetime(raw_date)
+            invoice_date = (
+                f"{dt.day:02d}-"
+                f"{spanish_months[dt.month]}-"
+                f"{dt.year}"
+            )
+        except (ValueError, TypeError):
+            invoice_date = raw_date
+
+    return price_per_pound, invoice_date
+
+def extraer_informacion_pdfs(ruta_pdf1, ruta_pdf2):
+
+    price_per_pound, invoice_date = extract_invoice_data(ruta_pdf1)
 
     # ==========================================
     #    LEER PDF 2 (Certificado / Reporte)
@@ -167,8 +218,8 @@ def extraer_informacion_pdfs(ruta_pdf1, ruta_pdf2):
 
         # --- CÁLCULOS MATEMÁTICOS ---
         peso_kg = math.trunc(total_libras / 2.2046) 
-        precio_unit_kg = precio_x_libra * 2.2046
-        valor_total = total_libras * precio_x_libra
+        precio_unit_kg = price_per_pound * 2.2046
+        valor_total = total_libras * price_per_pound
 
         # --- EMPAQUETADO FINAL ---
         datos_maestros = {
@@ -177,13 +228,13 @@ def extraer_informacion_pdfs(ruta_pdf1, ruta_pdf2):
             "varilla_aluminio": varilla_aluminio,
             "diametro": diametro,
             "total_libras": total_libras,
-            "precio_x_libra": precio_x_libra,
+            "precio_x_libra": price_per_pound,
             "denomi_social": denomi_social,
             "address": address,
             "peso_kg": peso_kg,
             "precio_unit_kg": precio_unit_kg,
             "valor_total": valor_total,
-            "fecha": fecha_factura,
+            "fecha": invoice_date,
             "heats": {} 
         }
         
