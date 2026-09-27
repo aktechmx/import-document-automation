@@ -49,28 +49,28 @@ def extract_invoice_data(invoice_path):
                         # FIND AND FORMAT SHIPPING DATE
                         if 'date' in cell and (
                             'shipped' in cell or 'envoi' in cell):
-                                if row_idx + 1 < len(invoice_df):
-                                    value_below = str(
-                                        invoice_df.iloc[
-                                            row_idx + 1,
-                                            col_idx
-                                        ]
-                                    ).strip()
+                            if row_idx + 1 < len(invoice_df):
+                                value_below = str(
+                                    invoice_df.iloc[
+                                        row_idx + 1,
+                                        col_idx
+                                    ]
+                                ).strip()
 
-                                    if (
-                                        re.search(r'\d',value_below)
-                                        and not invoice_date
-                                    ):
-                                        raw_date = value_below.upper()
-                                        try:
-                                            dt = pd.to_datetime(raw_date)
-                                            invoice_date = (
-                                                f"{dt.day:02d}-"
-                                                f"{spanish_months[dt.month]}-"
-                                                f"{dt.year}"
-                                            )
-                                        except (ValueError, TypeError):
-                                            invoice_date = raw_date
+                                if (
+                                    re.search(r'\d',value_below)
+                                    and not invoice_date
+                                ):
+                                    raw_date = value_below.upper()
+                                    try:
+                                        dt = pd.to_datetime(raw_date)
+                                        invoice_date = (
+                                            f"{dt.day:02d}-"
+                                            f"{spanish_months[dt.month]}-"
+                                            f"{dt.year}"
+                                        )
+                                    except (ValueError, TypeError):
+                                        invoice_date = raw_date
 
                         # FIND UNIT PRICE
                         if 'unit price' in cell or 'unitaire' in cell:
