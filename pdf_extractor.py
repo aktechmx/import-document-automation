@@ -116,9 +116,10 @@ def extract_invoice_data(invoice_path):
 
     return price_per_pound, invoice_date
 
-def extraer_informacion_pdfs(ruta_pdf1, ruta_pdf2):
+def extract_pdf_information(invoice_path, certificate_path):
+    "Extract information from the invoice and certificate PDF files."
 
-    price_per_pound, invoice_date = extract_invoice_data(ruta_pdf1)
+    price_per_pound, invoice_date = extract_invoice_data(invoice_path)
 
     # ==========================================
     #    LEER PDF 2 (Certificado / Reporte)
@@ -128,7 +129,7 @@ def extraer_informacion_pdfs(ruta_pdf1, ruta_pdf2):
     trip_num = "No encontrado"
     total_libras = 0.0
     
-    with pdfplumber.open(ruta_pdf2) as pdf2:
+    with pdfplumber.open(certificate_path) as pdf2:
         texto_pdf2 = ""
         for page in pdf2.pages:
             texto_pdf2 += page.extract_text() + "\n"

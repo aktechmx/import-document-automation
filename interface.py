@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 import os, sys
 from create_document import generar_word
-from pdf_extractor import extraer_informacion_pdfs
+from pdf_extractor import extract_pdf_information
 
 def ruta_ico(ruta_relativa):
     '''Obtendremos la ruta absoluta del ícono'''
@@ -127,7 +127,7 @@ class AplicacionPlantillas:
 
     def ejecutar_extraccion(self):
         try:
-            lista_de_datos = extraer_informacion_pdfs(self.ruta_pdf1, self.ruta_pdf2)
+            lista_de_datos = extract_pdf_information(self.ruta_pdf1, self.ruta_pdf2)
 
             self.lbl_estatus.config(text="Generando Plantilla en Word...")
             self.root.update()
