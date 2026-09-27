@@ -1,6 +1,8 @@
+"""Interfaz gráfica de usuario (GUI) para la aplicación de generación de plantillas de importaciones a partir de PDFs."""
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
-import os, sys
+import os
+import sys
 from create_document import generar_word
 from pdf_extractor import extract_pdf_information
 
@@ -14,6 +16,7 @@ def ruta_ico(ruta_relativa):
     return os.path.join(ruta_base, ruta_relativa)
 
 class AplicacionPlantillas:
+    """Aplicación para generar plantillas de importaciones a partir de PDFs."""
     def __init__(self, root):
         self.root = root
         # Título
@@ -29,7 +32,8 @@ class AplicacionPlantillas:
             imagen_icono = tk.PhotoImage(file=ruta_icono)
             self.root.iconphoto(False, imagen_icono)
         except Exception as e:
-            messagebox.showwarning("Debug de Ícono", f"No se pudo cargar el ícono.\n\nError: {e}\n\nRuta intentada: {ruta_icono}")
+            messagebox.showwarning("Debug de Ícono",
+                                    f"No se pudo cargar el ícono.\n\nError: {e}\n\nRuta intentada: {ruta_icono}")
 
         # Variables de las rutas
         self.ruta_pdf1 = ""
@@ -39,6 +43,7 @@ class AplicacionPlantillas:
         self.crear_interfaz()
 
     def crear_interfaz(self):
+        """Crea la interfaz gráfica de usuario (GUI) para la aplicación."""
         # --- ESTILOS ---
         estilo = ttk.Style()
         estilo.configure("TButton", font=("Calibri", 10), padding=5)
@@ -87,18 +92,21 @@ class AplicacionPlantillas:
 
     # --- FUNCIONES DE LOS BOTONES ---
     def seleccionar_pdf1(self):
+        """Selecciona el archivo PDF de la factura."""
         ruta = filedialog.askopenfilename(title="Selecciona la Factura", filetypes=[("Archivos PDF", "*.pdf")])
         if ruta:
             self.ruta_pdf1 = ruta
             self.lbl_pdf1.config(text=ruta.split("/")[-1], foreground="black")
 
     def seleccionar_pdf2(self):
+        """Selecciona el archivo PDF del certificado"""
         ruta = filedialog.askopenfilename(title="Selecciona el Certificado", filetypes=[("Archivos PDF", "*.pdf")])
         if ruta:
             self.ruta_pdf2 = ruta
             self.lbl_pdf2.config(text=ruta.split("/")[-1], foreground="black")
 
     def seleccionar_destino(self):
+        """Selecciona la carpeta donde se guardará el archivo Word generado"""
         ruta = filedialog.askdirectory(title="Selecciona la carpeta destino")
         if ruta:
             self.ruta_guardado = ruta
@@ -106,6 +114,7 @@ class AplicacionPlantillas:
 
     # --- LÓGICA DEL PROCESAMIENTO ---
     def iniciar_proceso(self):
+        """Inicia el proceso de extracción de datos y generación del documento Word."""
         # Validación
         if not self.ruta_pdf1 or not self.ruta_pdf2 or not self.ruta_guardado:
             messagebox.showwarning("Han faltado datos", "Por favor, selecciona los dos PDFs y la carpeta de destino.")
@@ -126,6 +135,8 @@ class AplicacionPlantillas:
         self.ejecutar_extraccion()
 
     def ejecutar_extraccion(self):
+        """Ejecuta la extracción de datos de los PDFs y genera el documento Word."""
+
         try:
             lista_de_datos = extract_pdf_information(self.ruta_pdf1, self.ruta_pdf2)
 
@@ -180,6 +191,7 @@ class AplicacionPlantillas:
 
     # Agregamos el parámetro 'exito=False' a la función
     def resetear_interfaz(self, solo_botones=False, exito=False):
+        """Resetea la interfaz para permitir un nuevo procesamiento."""
         self.btn_pdf1.state(['!disabled'])
         self.btn_pdf2.state(['!disabled'])
         self.btn_destino.state(['!disabled'])
